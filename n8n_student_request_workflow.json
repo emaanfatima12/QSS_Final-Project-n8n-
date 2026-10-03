@@ -1,0 +1,131 @@
+{
+  "name": "Student Request Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "student-request",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "1f7a1b7a-0000-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "student-request"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "REPLACE_WITH_YOUR_GOOGLE_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.body.name }}",
+            "Email": "={{ $json.body.email }}",
+            "Type": "={{ $json.body.type }}",
+            "Details": "={{ $json.body.details }}",
+            "Timestamp": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "1f7a1b7a-0000-4000-8000-000000000002",
+      "name": "Append to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [460, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "your-university-noreply@example.com",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "We received your request",
+        "emailFormat": "text",
+        "text": "=Hi {{ $json.body.name }},\n\nWe've received your {{ $json.body.type }} request:\n\"{{ $json.body.details }}\"\n\nOur team will get back to you soon.\n\n- AI Student Assistant",
+        "options": {}
+      },
+      "id": "1f7a1b7a-0000-4000-8000-000000000003",
+      "name": "Send Confirmation Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [700, 220],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_WITH_YOUR_SMTP_CREDENTIAL_ID",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "your-university-noreply@example.com",
+        "toEmail": "admin@example.com",
+        "subject": "=New student request: {{ $json.body.type }}",
+        "emailFormat": "text",
+        "text": "=New request submitted.\n\nName: {{ $json.body.name }}\nEmail: {{ $json.body.email }}\nType: {{ $json.body.type }}\nDetails: {{ $json.body.details }}",
+        "options": {}
+      },
+      "id": "1f7a1b7a-0000-4000-8000-000000000004",
+      "name": "Notify Admin",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [700, 400],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_WITH_YOUR_SMTP_CREDENTIAL_ID",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Append to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
